@@ -1,16 +1,12 @@
 import React, { createContext, useContext, useState } from "react";
-
-export interface SharedStateContextValue<TSharedState> {
-  sharedState: TSharedState;
-  subscribers: (() => void)[];
-}
+import { SharedState } from "./interface";
 
 /**
  * Hook for sharing a state between components in a context provider
  * with only rerendering the components using the hook
  */
 export function useSharedState<TSharedState>(
-  context: React.Context<SharedStateContextValue<TSharedState>>
+  context: React.Context<SharedState.ContextValue<TSharedState>>
 ): [TSharedState, React.Dispatch<React.SetStateAction<TSharedState>>] {
   //
   const contextValue = useContext(context);
@@ -46,9 +42,9 @@ export function useSharedState<TSharedState>(
 /**
  * Hook for just setting a shared state without updating the current component
  */
-export function useSetSharedState<TSharedState>(
-  context: React.Context<SharedStateContextValue<TSharedState>>
-): React.Dispatch<React.SetStateAction<TSharedState>> {
+export function useSetSharedState<T>(
+  context: React.Context<SharedState.ContextValue<T>>
+): React.Dispatch<React.SetStateAction<T>> {
   //
   const contextValue = useContext(context);
 
@@ -62,28 +58,28 @@ export function useSetSharedState<TSharedState>(
   };
 }
 
-export interface ConfigureSharedStateResult<TSharedState> {
-  Context: React.Context<SharedStateContextValue<TSharedState>>;
-  Provider: React.FC;
-}
-
-export function configureSharedState<TSharedState>(
-  initialValue: TSharedState
-): ConfigureSharedStateResult<TSharedState> {
+export function configureSharedState<T>(
+  defaultValue: T
+): SharedState.Config<T> {
   //
-  const Context = createContext<SharedStateContextValue<TSharedState>>({
-    sharedState: initialValue,
+  const Context = createContext<SharedState.ContextValue<T>>({
+    sharedState: defaultValue,
     subscribers: [],
   });
 
+  const Provider: React.FC<SharedState.ProviderProps<T>> = ({
+    children,
+    initialValue,
+  }) => {
+    const [value] = useState({
+      sharedState: initialValue,
+      subscribers: [],
+    });
+    return <Context.Provider value={value}>{children}</Context.Provider>;
+  };
+
   return {
     Context,
-    Provider: ({ children }) => {
-      const [value] = useState({
-        sharedState: initialValue,
-        subscribers: [],
-      });
-      return <Context.Provider value={value}>{children}</Context.Provider>;
-    },
+    Provider,
   };
 }

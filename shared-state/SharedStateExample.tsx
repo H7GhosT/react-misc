@@ -13,8 +13,9 @@ import {
   TextField,
   FormControl,
 } from "@material-ui/core";
+import { CBind } from "CBind";
 import { CombinedComponents } from "CombinedComponents";
-import { useState } from "react";
+import React, { useState } from "react";
 
 import {
   configureSharedState,
@@ -34,7 +35,12 @@ export function TestSharedState() {
   return (
     <>
       <CombinedComponents
-        components={[CounterStateProvider, ConfirmModalStateProvider]}
+        components={[
+          CBind(CounterStateProvider, { initialValue: 0 }),
+          CBind(ConfirmModalStateProvider, {
+            initialValue: { id: 0, open: false },
+          }),
+        ]}
       >
         <Buttons />
         <br />
