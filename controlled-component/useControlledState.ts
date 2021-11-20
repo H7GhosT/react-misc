@@ -1,29 +1,51 @@
-import React from "react";
+import React, { SetStateAction } from "react";
+import { useStateRef } from "./useStateRef";
+
+export function useControlledState<T>(
+  value: T | undefined,
+  onChange: React.Dispatch<T> | undefined,
+  defaultValue: T,
+): [T, React.Dispatch<React.SetStateAction<T>>];
+
+export function useControlledState<T>(
+  value: T | undefined,
+  onChange: React.Dispatch<T | undefined> | undefined,
+  defaultValue: T | undefined,
+): [T | undefined, React.Dispatch<React.SetStateAction<T | undefined>>];
 
 /**
  * Hook for providing a fallback to a internal state when a component doesn't have
  * a controlled value and/or change listener in props
  */
-export function useControlledState<TValue>(
-  value: TValue | undefined,
-  onChange: React.Dispatch<TValue> | undefined,
-  initialInternalState: TValue
-): [TValue, React.Dispatch<TValue>] {
+export function useControlledState<T>(
+  value: T | undefined,
+  onChange: React.Dispatch<T | undefined> | undefined,
+  defaultValue: T | undefined,
+): [T | undefined, React.Dispatch<React.SetStateAction<T | undefined>>] {
   //
-  const [internalState, setInternalState] =
-    React.useState(initialInternalState);
+  const [internalState, setInternalState] = React.useState(defaultValue);
+  const resultValue = value === undefined ? internalState : value;
+
+  // In case the setState will be called many times in a row with callback as argument
+  const currentValueRef = useStateRef(resultValue);
+
+  const dispatch = (v: SetStateAction<T | undefined>) =>
+  (currentValueRef.current =
+    v instanceof Function ? v(currentValueRef.current) : v);
 
   return [
-    value === undefined ? internalState : value,
+    resultValue,
     onChange === undefined
       ? value === undefined
         ? setInternalState
-        : () => {}
+        : () => { }
       : value === undefined
-      ? (v: TValue) => {
+        ? (v) => {
           setInternalState(v);
-          onChange(v);
+          onChange(dispatch(v));
         }
-      : onChange,
+        : (v) => {
+          onChange(dispatch(v));
+        },
   ];
 }
